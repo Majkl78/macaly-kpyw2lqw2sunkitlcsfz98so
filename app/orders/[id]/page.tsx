@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "Detail zakázky a její úprava",
 };
 
-export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  return <OrderDetailContent params={params} />;
+export default function OrderDetailPage({ params }: { params: { id: string } }) {
+  return <OrderDetailContent orderId={params.id} />;
 }
+
