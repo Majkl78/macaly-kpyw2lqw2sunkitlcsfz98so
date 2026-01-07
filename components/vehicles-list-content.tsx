@@ -360,25 +360,22 @@ export default function VehiclesListContent() {
                     )}
                   </div>
 
-                  <div className="flex gap-2 mt-4">
-                    <Link
-                      href={`/orders/new?spz=${encodeURIComponent(vehicle.licencePlate)}`}
-                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Nová zakázka
-                    </Link>
-                    <Link
-                      href={`/orders?licencePlate=${vehicle.licencePlate}`}
-                      className="flex-1 text-center bg-purple-50 text-purple-700 py-2 px-4 rounded-lg hover:bg-purple-100 transition-colors font-medium"
-                    >
-                      Zakázky →
-                    </Link>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                 <div className="flex gap-2 mt-4">
+  <Link
+    href={`/orders/new?vehicleId=${vehicle._id}`}
+    className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
+  >
+    <FileText className="h-4 w-4" />
+    Nová zakázka
+  </Link>
+  <Link
+    href={`/orders?vehicleId=${vehicle._id}`}
+    className="flex-1 text-center bg-purple-50 text-purple-700 py-2 px-4 rounded-lg hover:bg-purple-100 transition-colors font-medium"
+  >
+    Zakázky →
+  </Link>
+</div>
+
         )}
       </main>
 
