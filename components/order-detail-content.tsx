@@ -22,42 +22,30 @@ import { Button } from "@/components/ui/button";
 
 export default function OrderDetailContent({ orderId }: { orderId: string }) {
   const id = orderId;
+
   const order = useQuery(api.orders.getOrder, { id: id as Id<"orders"> });
 
   const printUrl = useMemo(() => `/orders/${id}/print`, [id]);
 
-  // mailto (zatím)
   const mailtoCustomer = useMemo(() => {
     if (!order?.email) return null;
     const subject = encodeURIComponent(`Zakázka #${order.orderNumber} – ${order.licencePlate}`);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const body = encodeURIComponent(
-      `Dobrý den,\n\nzasíláme zakázkový list k zakázce #${order.orderNumber} (${order.licencePlate}).\n\nOdkaz na zakázkový list:\n${typeof window !== "undefined" ? window.location.origin : ""}${printUrl}\n\nS pozdravem\nAutoservis`
+      `Dobrý den,\n\nzasíláme zakázkový list k zakázce #${order.orderNumber} (${order.licencePlate}).\n\nOdkaz na zakázkový list:\n${origin}${printUrl}\n\nS pozdravem\nAutoservis`
     );
     return `mailto:${order.email}?subject=${subject}&body=${body}`;
   }, [order?.email, order?.orderNumber, order?.licencePlate, printUrl]);
 
+  // klientský email zatím nemáš ve schématu -> bude disabled
   const clientEmail = (order as any)?.clientEmail as string | undefined;
 
   const mailtoClient = useMemo(() => {
     if (!clientEmail) return null;
     const subject = encodeURIComponent(`Zakázka #${order?.orderNumber} – ${order?.licencePlate}`);
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const body = encodeURIComponent(
-      `Dobrý den,\n\nzasíláme zakázkový list k zakázce #${order?.orderNumber} (${order?.licencePlate}).\n\nOdkaz na zakázkový list:\n${typeof window !== "undefined" ? window.location.origin : ""}${printUrl}\n\nS pozdravem\nAutoservis`
-    );
-    return `mailto:${clientEmail}?subject=${subject}&body=${body}`;
-  }, [clientEmail, order?.orderNumber, order?.licencePlate, printUrl]);
-
-  // ... zbytek komponenty nech tak jak ho máš (render, cards, atd.)
-}
-
-  // klientský email zatím nemáš ve schématu -> připravené, ale bude disabled
-  const clientEmail = (order as any)?.clientEmail as string | undefined;
-
-  const mailtoClient = useMemo(() => {
-    if (!clientEmail) return null;
-    const subject = encodeURIComponent(`Zakázka #${order?.orderNumber} – ${order?.licencePlate}`);
-    const body = encodeURIComponent(
-      `Dobrý den,\n\nzasíláme zakázkový list k zakázce #${order?.orderNumber} (${order?.licencePlate}).\n\nOdkaz na zakázkový list:\n${typeof window !== "undefined" ? window.location.origin : ""}${printUrl}\n\nS pozdravem\nAutoservis`
+      `Dobrý den,\n\nzasíláme zakázkový list k zakázce #${order?.orderNumber} (${order?.licencePlate}).\n\nOdkaz na zakázkový list:\n${origin}${printUrl}\n\nS pozdravem\nAutoservis`
     );
     return `mailto:${clientEmail}?subject=${subject}&body=${body}`;
   }, [clientEmail, order?.orderNumber, order?.licencePlate, printUrl]);
@@ -91,7 +79,7 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
               <Link href="/orders" className="text-slate-600 hover:text-slate-900">
                 <ArrowLeft className="h-6 w-6" />
@@ -117,13 +105,13 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
             </div>
 
             {/* ✅ AKCE */}
-            <div className="flex gap-2 flex-wrap justify-end">
-              <Link href={printUrl}>
-                <Button variant="outline" className="gap-2">
+            <div className="flex flex-wrap gap-2 md:justify-end">
+              <Button asChild variant="outline" className="gap-2">
+                <Link href={printUrl}>
                   <Printer className="h-4 w-4" />
                   Zakázkový list
-                </Button>
-              </Link>
+                </Link>
+              </Button>
 
               <Button
                 variant="outline"
@@ -172,7 +160,6 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Základní informace */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -221,7 +208,6 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               </CardContent>
             </Card>
 
-            {/* Termín */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -243,7 +229,6 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               </CardContent>
             </Card>
 
-            {/* Pick-up služba */}
             {order.pickUp?.toLowerCase() === "ano" && (
               <Card>
                 <CardHeader>
@@ -274,7 +259,6 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Kontakt */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -318,7 +302,6 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               </CardContent>
             </Card>
 
-            {/* Vozidlo */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -342,7 +325,6 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               </CardContent>
             </Card>
 
-            {/* Stavy */}
             <Card>
               <CardHeader>
                 <CardTitle>Stavy zakázky</CardTitle>
