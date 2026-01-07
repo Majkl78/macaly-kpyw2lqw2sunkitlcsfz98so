@@ -88,6 +88,8 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-3xl font-bold text-slate-900">Zakázka #{order.orderNumber}</h1>
                   <div className="text-xs text-red-500">DEBUG-AKCE</div>
+                  <span className="ml-3 text-xs text-red-600">DEBUG: NOVÁ VERZE</span>
+                  </h1>
 
 
                   {order.overdue?.toLowerCase() === "ano" && (
