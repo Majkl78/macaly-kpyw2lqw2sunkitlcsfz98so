@@ -87,6 +87,8 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-3xl font-bold text-slate-900">Zakázka #{order.orderNumber}</h1>
+                  <div className="text-xs text-red-500">DEBUG-AKCE</div>
+
 
                   {order.overdue?.toLowerCase() === "ano" && (
                     <Badge variant="destructive" className="flex items-center gap-1">
