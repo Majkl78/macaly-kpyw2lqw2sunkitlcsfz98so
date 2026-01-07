@@ -1,10 +1,11 @@
-import { defineSchema, defineTable } from "convex/server"
-import { v } from "convex/values"
-import { authTables } from "@convex-dev/auth/server"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
   ...authTables,
-   orgs: defineTable({
+
+  orgs: defineTable({
     name: v.string(),
     createdAt: v.number(),
   }).index("by_name", ["name"]),
@@ -25,7 +26,7 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_org", ["orgId"])
     .index("by_org_role", ["orgId", "role"]),
- 
+
   // Vozidla (SPZ list)
   vehicles: defineTable({
     licencePlate: v.string(), // SPZ
@@ -49,40 +50,40 @@ export default defineSchema({
   orders: defineTable({
     orderNumber: v.number(), // Č. zakázky
     date: v.string(), // Datum vytvoření
-    licencePlate: v.string(), // SPZ
+    licencePlate: v.string(), // SPZ (snapshot)
     vehicleId: v.optional(v.id("vehicles")), // Relace na vozidlo
-    
+
     // Firma a kontakt
-    company: v.optional(v.string()), // Firma
-    contactName: v.optional(v.string()), // Jméno
-    contactCompany: v.optional(v.string()), // Společnost
-    phone: v.optional(v.string()), // Telefon
-    email: v.optional(v.string()), // Email
-    
+    company: v.optional(v.string()),
+    contactName: v.optional(v.string()),
+    contactCompany: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+
     // Detaily zakázky
-    kmState: v.optional(v.string()), // Stav KM
-    repairRequest: v.optional(v.string()), // Požadavek opravy
-    deadline: v.optional(v.string()), // Termín
-    time: v.optional(v.string()), // Čas
-    note: v.optional(v.string()), // Poznámka
-    
+    kmState: v.optional(v.string()),
+    repairRequest: v.optional(v.string()),
+    deadline: v.optional(v.string()),
+    time: v.optional(v.string()),
+    note: v.optional(v.string()),
+
     // Pick-up služba
     pickUp: v.optional(v.string()), // ANO/NE
     pickUpAddress: v.optional(v.string()),
-    pickUpTimeCollection: v.optional(v.string()), // Čas vyzvednutí
-    pickUpTimeReturn: v.optional(v.string()), // Čas vrácení
-    
+    pickUpTimeCollection: v.optional(v.string()),
+    pickUpTimeReturn: v.optional(v.string()),
+
     // Autoservis
-    autoService: v.optional(v.string()), // Autoservis
-    vin: v.optional(v.string()), // VIN
-    brand: v.optional(v.string()), // Značka
-    
+    autoService: v.optional(v.string()),
+    vin: v.optional(v.string()),
+    brand: v.optional(v.string()),
+
     // Stavy
-    nv: v.optional(v.string()), // NV
-    confirmed: v.optional(v.string()), // Potvrzeno
-    calculation: v.optional(v.string()), // Kalkulace
-    invoicing: v.optional(v.string()), // Fakturace
-    overdue: v.optional(v.string()), // Po termínu
+    nv: v.optional(v.string()),
+    confirmed: v.optional(v.string()),
+    calculation: v.optional(v.string()),
+    invoicing: v.optional(v.string()),
+    overdue: v.optional(v.string()),
   })
     .index("by_order_number", ["orderNumber"])
     .index("by_licence_plate", ["licencePlate"])
@@ -90,4 +91,4 @@ export default defineSchema({
     .index("by_date", ["date"])
     .index("by_deadline", ["deadline"])
     .index("by_overdue", ["overdue"]),
-})
+});
