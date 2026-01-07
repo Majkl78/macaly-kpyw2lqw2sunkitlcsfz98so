@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import OrderDetailContent from '@/components/order-detail-content';
+import OrderDetailContent from "@/components/order-detail-content.tsx";
+
 
 export const metadata: Metadata = {
   title: "Detail zakázky - Správa zakázek",
