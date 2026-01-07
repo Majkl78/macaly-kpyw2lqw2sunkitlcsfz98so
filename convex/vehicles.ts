@@ -23,6 +23,14 @@ export const getVehicles = query({
   },
 });
 
+// vozidlo query
+export const getVehicle = query({
+  args: { id: v.id("vehicles") },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.get(id);
+  },
+});
+
 // Získat vozidlo podle ID
 export const getVehicle = query({
   args: { id: v.id("vehicles") },
