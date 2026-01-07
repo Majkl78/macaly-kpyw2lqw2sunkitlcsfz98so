@@ -86,6 +86,7 @@ export default defineSchema({
   })
     .index("by_order_number", ["orderNumber"])
     .index("by_licence_plate", ["licencePlate"])
+    .index("by_vehicle_id", ["vehicleId"])
     .index("by_date", ["date"])
     .index("by_deadline", ["deadline"])
     .index("by_overdue", ["overdue"]),
