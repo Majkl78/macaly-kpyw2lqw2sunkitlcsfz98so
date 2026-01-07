@@ -86,10 +86,27 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
               </Link>
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-3xl font-bold text-slate-900">Zakázka #{order.orderNumber}</h1>
-                  <div className="text-xs text-red-500">DEBUG-AKCE</div>
-                  <span className="ml-3 text-xs text-red-600">DEBUG: NOVÁ VERZE</span>
-                  </h1>
+  <h1 className="text-3xl font-bold text-slate-900">
+    Zakázka #{order.orderNumber}
+  </h1>
+
+  <div className="text-xs text-red-500">DEBUG-AKCE</div>
+  <span className="text-xs text-red-600">DEBUG: NOVÁ VERZE</span>
+
+  {order.overdue?.toLowerCase() === "ano" && (
+    <Badge variant="destructive" className="flex items-center gap-1">
+      <AlertTriangle className="h-3 w-3" />
+      Po termínu
+    </Badge>
+  )}
+
+  {order.confirmed?.toLowerCase() === "ano" && (
+    <Badge variant="default" className="bg-green-600">
+      Potvrzeno
+    </Badge>
+  )}
+</div>
+
 
 
                   {order.overdue?.toLowerCase() === "ano" && (
