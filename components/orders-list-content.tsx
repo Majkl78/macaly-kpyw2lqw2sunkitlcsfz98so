@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import Link from "next/link";
-import { Search, Filter, ArrowLeft, Calendar, AlertCircle, CheckCircle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Search, ArrowLeft, Calendar, AlertCircle, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,13 +18,36 @@ import {
 } from "@/components/ui/select";
 
 export default function OrdersListContent() {
+  const searchParams = useSearchParams();
+
+  // ✅ URL filtry
+  const vehicleIdParam = searchParams.get("vehicleId") || undefined;
+  const licencePlateParam = searchParams.get("licencePlate") || undefined;
+
   const [search, setSearch] = useState("");
   const [overdueFilter, setOverdueFilter] = useState<boolean | undefined>(undefined);
-  
+
   const orders = useQuery(api.orders.getOrders, {
     search: search || undefined,
     overdue: overdueFilter,
+    // ✅ NEW: když je vehicleId, filtrujeme primárně podle něj
+    vehicleId: vehicleIdParam as any,
+    // ✅ fallback: když není vehicleId, může být licencePlate
+    licencePlate: vehicleIdParam ? undefined : licencePlateParam,
   });
+
+  const titleSuffix = useMemo(() => {
+    if (vehicleIdParam) return " (vybrané vozidlo)";
+    if (licencePlateParam) return ` (${licencePlateParam})`;
+    return "";
+  }, [vehicleIdParam, licencePlateParam]);
+
+  // ✅ zachovej kontext pro “Nová zakázka”
+  const newOrderHref = useMemo(() => {
+    if (vehicleIdParam) return `/orders/new?vehicleId=${encodeURIComponent(vehicleIdParam)}`;
+    if (licencePlateParam) return `/orders/new?spz=${encodeURIComponent(licencePlateParam)}`;
+    return "/orders/new";
+  }, [vehicleIdParam, licencePlateParam]);
 
   if (orders === undefined) {
     return (
@@ -47,12 +71,13 @@ export default function OrdersListContent() {
                 <ArrowLeft className="h-6 w-6" />
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">Zakázky</h1>
+                <h1 className="text-3xl font-bold text-slate-900">Zakázky{titleSuffix}</h1>
                 <p className="text-slate-600 mt-1">Celkem {orders.length} zakázek</p>
               </div>
             </div>
-            <Link 
-              href="/orders/new"
+
+            <Link
+              href={newOrderHref}
               className="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-md"
             >
               + Nová zakázka
@@ -75,8 +100,8 @@ export default function OrdersListContent() {
                 className="pl-10"
               />
             </div>
-            
-            <Select 
+
+            <Select
               value={overdueFilter === true ? "yes" : overdueFilter === false ? "no" : "all"}
               onValueChange={(value) => {
                 if (value === "yes") setOverdueFilter(true);
@@ -94,8 +119,8 @@ export default function OrdersListContent() {
               </SelectContent>
             </Select>
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setSearch("");
                 setOverdueFilter(undefined);
@@ -104,6 +129,21 @@ export default function OrdersListContent() {
               Zrušit filtry
             </Button>
           </div>
+
+          {(vehicleIdParam || licencePlateParam) && (
+            <div className="mt-4 text-sm text-slate-600">
+              Aktivní filtr:{" "}
+              {vehicleIdParam ? (
+                <span className="font-medium">vehicleId</span>
+              ) : (
+                <span className="font-medium">SPZ: {licencePlateParam}</span>
+              )}{" "}
+              •{" "}
+              <Link href="/orders" className="text-primary hover:underline">
+                Zobrazit všechny
+              </Link>
+            </div>
+          )}
         </Card>
 
         {/* Orders Table */}
@@ -145,42 +185,34 @@ export default function OrdersListContent() {
                   {orders.map((order) => (
                     <tr key={order._id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-slate-900">
-                          #{order.orderNumber}
-                        </span>
+                        <span className="text-sm font-medium text-slate-900">#{order.orderNumber}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-bold text-slate-900">
-                          {order.licencePlate}
-                        </span>
+                        <span className="text-sm font-bold text-slate-900">{order.licencePlate}</span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-slate-900">{order.company || '-'}</div>
-                        <div className="text-xs text-slate-500">{order.contactName || ''}</div>
+                        <div className="text-sm text-slate-900">{order.company || "-"}</div>
+                        <div className="text-xs text-slate-500">{order.contactName || ""}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-slate-900 max-w-xs truncate">
-                          {order.repairRequest || '-'}
-                        </div>
+                        <div className="text-sm text-slate-900 max-w-xs truncate">{order.repairRequest || "-"}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4 text-slate-400" />
-                          <span className="text-sm text-slate-900">{order.deadline || '-'}</span>
+                          <span className="text-sm text-slate-900">{order.deadline || "-"}</span>
                         </div>
-                        {order.time && (
-                          <div className="text-xs text-slate-500">{order.time}</div>
-                        )}
+                        {order.time && <div className="text-xs text-slate-500">{order.time}</div>}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col gap-1">
-                          {order.overdue?.toLowerCase() === 'ano' && (
+                          {order.overdue?.toLowerCase() === "ano" && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               <AlertCircle className="h-3 w-3" />
                               Po termínu
                             </span>
                           )}
-                          {order.confirmed?.toLowerCase() === 'ano' && (
+                          {order.confirmed?.toLowerCase() === "ano" && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               <CheckCircle className="h-3 w-3" />
                               Potvrzeno
@@ -189,10 +221,7 @@ export default function OrdersListContent() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link 
-                          href={`/orders/${order._id}`}
-                          className="text-primary hover:text-primary/80"
-                        >
+                        <Link href={`/orders/${order._id}`} className="text-primary hover:text-primary/80">
                           Detail →
                         </Link>
                       </td>
