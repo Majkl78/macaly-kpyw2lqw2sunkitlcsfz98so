@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Calendar,
   Phone,
-  Mail,
   Car,
   MapPin,
   FileText,
@@ -21,13 +20,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export default function OrderDetailContent({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function OrderDetailContent({ orderId }: { orderId: string }) {
+  const id = orderId;
   const order = useQuery(api.orders.getOrder, { id: id as Id<"orders"> });
-  console.log("ORDER DETAIL HEADER WITH ACTIONS LOADED", id);
 
   const printUrl = useMemo(() => `/orders/${id}/print`, [id]);
 
+  // mailto (zatím)
   const mailtoCustomer = useMemo(() => {
     if (!order?.email) return null;
     const subject = encodeURIComponent(`Zakázka #${order.orderNumber} – ${order.licencePlate}`);
@@ -36,6 +35,20 @@ export default function OrderDetailContent({ params }: { params: Promise<{ id: s
     );
     return `mailto:${order.email}?subject=${subject}&body=${body}`;
   }, [order?.email, order?.orderNumber, order?.licencePlate, printUrl]);
+
+  const clientEmail = (order as any)?.clientEmail as string | undefined;
+
+  const mailtoClient = useMemo(() => {
+    if (!clientEmail) return null;
+    const subject = encodeURIComponent(`Zakázka #${order?.orderNumber} – ${order?.licencePlate}`);
+    const body = encodeURIComponent(
+      `Dobrý den,\n\nzasíláme zakázkový list k zakázce #${order?.orderNumber} (${order?.licencePlate}).\n\nOdkaz na zakázkový list:\n${typeof window !== "undefined" ? window.location.origin : ""}${printUrl}\n\nS pozdravem\nAutoservis`
+    );
+    return `mailto:${clientEmail}?subject=${subject}&body=${body}`;
+  }, [clientEmail, order?.orderNumber, order?.licencePlate, printUrl]);
+
+  // ... zbytek komponenty nech tak jak ho máš (render, cards, atd.)
+}
 
   // klientský email zatím nemáš ve schématu -> připravené, ale bude disabled
   const clientEmail = (order as any)?.clientEmail as string | undefined;
