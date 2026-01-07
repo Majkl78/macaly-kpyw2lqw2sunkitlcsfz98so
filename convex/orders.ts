@@ -134,6 +134,21 @@ export const deleteOrder = mutation({
     await ctx.db.delete(args.id);
   },
 });
+// zakázky podle ID auta
+export const getOrdersByVehicleId = query({
+  args: { vehicleId: v.id("vehicles") },
+  handler: async (ctx, { vehicleId }) => {
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_vehicle_id", (q) => q.eq("vehicleId", vehicleId))
+      .collect();
+
+    // řazení (např. nejnovější nahoře)
+    orders.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+    return orders;
+  },
+});
+
 
 // Statistiky
 export const getOrderStats = query({
