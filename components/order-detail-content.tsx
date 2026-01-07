@@ -87,12 +87,11 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
                 <ArrowLeft className="h-6 w-6" />
               </Link>
               <div>
-                <div className="flex items-center gap-3 flex-wrap">
+               <div className="flex items-center gap-3 flex-wrap">
   <h1 className="text-3xl font-bold text-slate-900">
     Zakázka #{order.orderNumber}
   </h1>
 
-  <div className="text-xs text-red-500">DEBUG-AKCE</div>
   <span className="text-xs text-red-600">DEBUG: NOVÁ VERZE</span>
 
   {order.overdue?.toLowerCase() === "ano" && (
@@ -100,6 +99,15 @@ export default function OrderDetailContent({ orderId }: { orderId: string }) {
       <AlertTriangle className="h-3 w-3" />
       Po termínu
     </Badge>
+  )}
+
+  {order.confirmed?.toLowerCase() === "ano" && (
+    <Badge variant="default" className="bg-green-600">
+      Potvrzeno
+    </Badge>
+  )}
+</div>
+
   )}
 
   {order.confirmed?.toLowerCase() === "ano" && (
