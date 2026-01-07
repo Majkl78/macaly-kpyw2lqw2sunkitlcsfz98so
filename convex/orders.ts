@@ -7,42 +7,47 @@ export const getOrders = query({
     search: v.optional(v.string()),
     overdue: v.optional(v.boolean()),
     licencePlate: v.optional(v.string()),
+    vehicleId: v.optional(v.id("vehicles")), // ✅ NEW
   },
   handler: async (ctx, args) => {
     let orders = await ctx.db.query("orders").collect();
-    
+
+    // ✅ NEW: Filtrování podle vehicleId
+    if (args.vehicleId) {
+      orders = orders.filter((order) => order.vehicleId === args.vehicleId);
+    }
+
     // Filtrování podle hledání
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      orders = orders.filter(order => 
-        order.licencePlate?.toLowerCase().includes(searchLower) ||
-        order.company?.toLowerCase().includes(searchLower) ||
-        order.contactName?.toLowerCase().includes(searchLower) ||
-        order.orderNumber?.toString().includes(searchLower)
+      orders = orders.filter(
+        (order) =>
+          order.licencePlate?.toLowerCase().includes(searchLower) ||
+          order.company?.toLowerCase().includes(searchLower) ||
+          order.contactName?.toLowerCase().includes(searchLower) ||
+          order.orderNumber?.toString().includes(searchLower)
       );
     }
-    
+
     // Filtrování po termínu
     if (args.overdue) {
-      orders = orders.filter(order => 
-        order.overdue?.toLowerCase() === 'ano' || order.overdue === 'Ano'
+      orders = orders.filter(
+        (order) => order.overdue?.toLowerCase() === "ano" || order.overdue === "Ano"
       );
     }
-    
-    // Filtrování podle SPZ
+
+    // Filtrování podle SPZ (fallback / kompatibilita)
     if (args.licencePlate) {
-      orders = orders.filter(order => 
-        order.licencePlate === args.licencePlate
-      );
+      orders = orders.filter((order) => order.licencePlate === args.licencePlate);
     }
-    
+
     // Seřadit podle data (nejnovější první)
     orders.sort((a, b) => {
-      const dateA = new Date(a.date.split('.').reverse().join('-'));
-      const dateB = new Date(b.date.split('.').reverse().join('-'));
+      const dateA = new Date(a.date.split(".").reverse().join("-"));
+      const dateB = new Date(b.date.split(".").reverse().join("-"));
       return dateB.getTime() - dateA.getTime();
     });
-    
+
     return orders;
   },
 });
@@ -61,6 +66,9 @@ export const addOrder = mutation({
     orderNumber: v.number(),
     date: v.string(),
     licencePlate: v.string(),
+
+    vehicleId: v.optional(v.id("vehicles")), // ✅ NEW
+
     company: v.optional(v.string()),
     contactName: v.optional(v.string()),
     contactCompany: v.optional(v.string()),
@@ -97,6 +105,9 @@ export const updateOrder = mutation({
     orderNumber: v.optional(v.number()),
     date: v.optional(v.string()),
     licencePlate: v.optional(v.string()),
+
+    vehicleId: v.optional(v.id("vehicles")), // ✅ NEW
+
     company: v.optional(v.string()),
     contactName: v.optional(v.string()),
     contactCompany: v.optional(v.string()),
@@ -134,6 +145,7 @@ export const deleteOrder = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
 // zakázky podle ID auta
 export const getOrdersByVehicleId = query({
   args: { vehicleId: v.id("vehicles") },
@@ -143,23 +155,21 @@ export const getOrdersByVehicleId = query({
       .withIndex("by_vehicle_id", (q) => q.eq("vehicleId", vehicleId))
       .collect();
 
-    // řazení (např. nejnovější nahoře)
     orders.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
     return orders;
   },
 });
 
-
 // Statistiky
 export const getOrderStats = query({
   handler: async (ctx) => {
     const orders = await ctx.db.query("orders").collect();
-    
+
     const total = orders.length;
-    const overdue = orders.filter(o => o.overdue?.toLowerCase() === 'ano').length;
-    const confirmed = orders.filter(o => o.confirmed?.toLowerCase() === 'ano').length;
-    const pickUpOrders = orders.filter(o => o.pickUp?.toLowerCase() === 'ano').length;
-    
+    const overdue = orders.filter((o) => o.overdue?.toLowerCase() === "ano").length;
+    const confirmed = orders.filter((o) => o.confirmed?.toLowerCase() === "ano").length;
+    const pickUpOrders = orders.filter((o) => o.pickUp?.toLowerCase() === "ano").length;
+
     return {
       total,
       overdue,
