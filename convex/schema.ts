@@ -4,7 +4,28 @@ import { authTables } from "@convex-dev/auth/server"
 
 export default defineSchema({
   ...authTables,
-  
+   orgs: defineTable({
+    name: v.string(),
+    createdAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  profiles: defineTable({
+    userId: v.id("users"),
+    orgId: v.id("orgs"),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("reception"),
+      v.literal("tech"),
+      v.literal("viewer")
+    ),
+    displayName: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_org", ["orgId"])
+    .index("by_org_role", ["orgId", "role"]),
+ 
   // Vozidla (SPZ list)
   vehicles: defineTable({
     licencePlate: v.string(), // SPZ
