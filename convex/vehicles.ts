@@ -8,22 +8,23 @@ export const getVehicles = query({
   },
   handler: async (ctx, args) => {
     let vehicles = await ctx.db.query("vehicles").collect();
-    
+
     if (args.search) {
       const searchLower = args.search.toLowerCase();
-      vehicles = vehicles.filter(vehicle => 
-        vehicle.licencePlate?.toLowerCase().includes(searchLower) ||
-        vehicle.make?.toLowerCase().includes(searchLower) ||
-        vehicle.modelLine?.toLowerCase().includes(searchLower) ||
-        vehicle.vinCode?.toLowerCase().includes(searchLower)
+      vehicles = vehicles.filter(
+        (vehicle) =>
+          vehicle.licencePlate?.toLowerCase().includes(searchLower) ||
+          vehicle.make?.toLowerCase().includes(searchLower) ||
+          vehicle.modelLine?.toLowerCase().includes(searchLower) ||
+          vehicle.vinCode?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     return vehicles;
   },
 });
 
-// vozidlo query
+// Získat vozidlo podle ID
 export const getVehicle = query({
   args: { id: v.id("vehicles") },
   handler: async (ctx, { id }) => {
@@ -31,37 +32,27 @@ export const getVehicle = query({
   },
 });
 
-// Získat vozidlo podle ID
-export const getVehicle = query({
-  args: { id: v.id("vehicles") },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
-  },
-});
-
 // Získat vozidlo podle SPZ (case-insensitive)
 export const getVehicleByPlate = query({
   args: { licencePlate: v.string() },
   handler: async (ctx, args) => {
-    // Normalizace SPZ - odstranění mezer a převod na velká písmena
-    const normalizedPlate = args.licencePlate.replace(/\s/g, '').toUpperCase();
-    
-    // Nejprve zkusíme přesnou shodu s indexem
+    const normalizedPlate = args.licencePlate.replace(/\s/g, "").toUpperCase();
+
+    // nejdřív zkus index přes exact value
     let vehicle = await ctx.db
       .query("vehicles")
       .withIndex("by_licence_plate", (q) => q.eq("licencePlate", normalizedPlate))
       .first();
-    
-    // Pokud nenajdeme, zkusíme case-insensitive vyhledávání
+
+    // fallback (kdyby v DB byly SPZ s mezerami / různý formát)
     if (!vehicle) {
       const allVehicles = await ctx.db.query("vehicles").collect();
-      vehicle = allVehicles.find(v => 
-        v.licencePlate?.replace(/\s/g, '').toUpperCase() === normalizedPlate
-      ) || null;
+      vehicle =
+        allVehicles.find(
+          (v) => v.licencePlate?.replace(/\s/g, "").toUpperCase() === normalizedPlate
+        ) ?? null;
     }
-    
-    console.log('Hledám SPZ:', args.licencePlate, '-> normalizováno:', normalizedPlate, '-> nalezeno:', vehicle ? 'ANO' : 'NE');
-    
+
     return vehicle;
   },
 });
@@ -125,18 +116,20 @@ export const deleteVehicle = mutation({
 // Bulk import vozidel z XLS
 export const bulkImportVehicles = mutation({
   args: {
-    vehicles: v.array(v.object({
-      licencePlate: v.string(),
-      make: v.optional(v.string()),
-      modelLine: v.optional(v.string()),
-      trim: v.optional(v.string()),
-      engineCapacity: v.optional(v.string()),
-      powerKw: v.optional(v.string()),
-      fuelType: v.optional(v.string()),
-      transmission: v.optional(v.string()),
-      vinCode: v.optional(v.string()),
-      lessor: v.optional(v.string()),
-    })),
+    vehicles: v.array(
+      v.object({
+        licencePlate: v.string(),
+        make: v.optional(v.string()),
+        modelLine: v.optional(v.string()),
+        trim: v.optional(v.string()),
+        engineCapacity: v.optional(v.string()),
+        powerKw: v.optional(v.string()),
+        fuelType: v.optional(v.string()),
+        transmission: v.optional(v.string()),
+        vinCode: v.optional(v.string()),
+        lessor: v.optional(v.string()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     let imported = 0;
@@ -145,18 +138,15 @@ export const bulkImportVehicles = mutation({
 
     for (const vehicle of args.vehicles) {
       try {
-        // Kontrola, zda vozidlo už existuje
         const existing = await ctx.db
           .query("vehicles")
           .withIndex("by_licence_plate", (q) => q.eq("licencePlate", vehicle.licencePlate))
           .first();
 
         if (existing) {
-          // Aktualizovat existující
           await ctx.db.patch(existing._id, vehicle);
           updated++;
         } else {
-          // Vložit nové
           await ctx.db.insert("vehicles", vehicle);
           imported++;
         }
