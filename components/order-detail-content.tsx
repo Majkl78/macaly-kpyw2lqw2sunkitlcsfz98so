@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 export default function OrderDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const order = useQuery(api.orders.getOrder, { id: id as Id<"orders"> });
+  console.log("ORDER DETAIL HEADER WITH ACTIONS LOADED", id);
 
   const printUrl = useMemo(() => `/orders/${id}/print`, [id]);
 
