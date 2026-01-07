@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Car, User, Calendar, FileText, MapPin } from "lucide-react";
@@ -16,17 +17,21 @@ import { Switch } from "@/components/ui/switch";
 export default function NewOrderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const spzFromUrl = searchParams.get('spz') || "";
-  
+
+  const vehicleIdFromUrl = searchParams.get("vehicleId"); // NEW
+  const spzFromUrl = searchParams.get("spz") || ""; // fallback
+
   const addOrder = useMutation(api.orders.addOrder);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state - inicializujeme hned s hodnotami z URL
+  // Form state
   const [formData, setFormData] = useState({
     orderNumber: Math.floor(Math.random() * 10000) + 5000,
-    date: new Date().toLocaleDateString('cs-CZ'),
+    date: new Date().toLocaleDateString("cs-CZ"),
     licencePlate: spzFromUrl.toUpperCase(),
+
     company: "",
     contactName: "",
     contactCompany: "",
@@ -37,47 +42,74 @@ export default function NewOrderContent() {
     deadline: "",
     time: "",
     note: "",
+
     pickUp: false,
     pickUpAddress: "",
     pickUpTimeCollection: "",
     pickUpTimeReturn: "",
+
     autoService: "",
     vin: "",
     brand: "",
   });
 
-  // Query pro vyhledání vozidla podle SPZ
-  const vehicle = useQuery(
+  const handleChange = (field: string, value: string | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // --- NEW: když je vehicleId, načti vozidlo podle ID ---
+  const vehicleById = useQuery(
+    api.vehicles.getVehicle,
+    vehicleIdFromUrl ? ({ id: vehicleIdFromUrl as Id<"vehicles"> } as any) : "skip"
+  );
+
+  // --- fallback: vyhledání podle SPZ (zůstává) ---
+  const vehicleByPlate = useQuery(
     api.vehicles.getVehicleByPlate,
-    formData.licencePlate.length >= 2 
-      ? { licencePlate: formData.licencePlate.toUpperCase() } 
+    !vehicleIdFromUrl && formData.licencePlate.length >= 2
+      ? { licencePlate: formData.licencePlate.toUpperCase() }
       : "skip"
   );
 
-  // Automatické vyplnění údajů z databáze vozidel
+  // Jednotný "vehicle" objekt pro UI (preferuje vehicleId)
+  const vehicle = useMemo(() => {
+    return vehicleIdFromUrl ? vehicleById : vehicleByPlate;
+  }, [vehicleIdFromUrl, vehicleById, vehicleByPlate]);
+
+  // --- NEW: když přijde vehicleById, předvyplň SPZ a údaje ---
   useEffect(() => {
-    if (vehicle) {
-      console.log('Nalezeno vozidlo:', vehicle);
-      
-      setFormData(prev => ({
+    if (vehicleIdFromUrl && vehicleById) {
+      setFormData((prev) => ({
         ...prev,
-        brand: vehicle.make || '',
-        company: vehicle.lessor || '',
-        vin: vehicle.vinCode || '',
-        autoService: vehicle.modelLine 
-          ? `${vehicle.make || ''} ${vehicle.modelLine}${vehicle.trim ? ' ' + vehicle.trim : ''}`.trim()
-          : '',
+        licencePlate: (vehicleById.licencePlate || "").toUpperCase(),
+        brand: vehicleById.make || prev.brand,
+        company: vehicleById.lessor || prev.company,
+        vin: vehicleById.vinCode || prev.vin,
+        autoService: vehicleById.modelLine
+          ? `${vehicleById.make || ""} ${vehicleById.modelLine}${vehicleById.trim ? " " + vehicleById.trim : ""}`.trim()
+          : prev.autoService,
       }));
     }
-  }, [vehicle]);
+  }, [vehicleIdFromUrl, vehicleById]);
 
-  const handleChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  // původní auto-fill, když se najde podle SPZ (fallback)
+  useEffect(() => {
+    if (!vehicleIdFromUrl && vehicleByPlate) {
+      setFormData((prev) => ({
+        ...prev,
+        brand: vehicleByPlate.make || "",
+        company: vehicleByPlate.lessor || "",
+        vin: vehicleByPlate.vinCode || "",
+        autoService: vehicleByPlate.modelLine
+          ? `${vehicleByPlate.make || ""} ${vehicleByPlate.modelLine}${vehicleByPlate.trim ? " " + vehicleByPlate.trim : ""}`.trim()
+          : "",
+      }));
+    }
+  }, [vehicleIdFromUrl, vehicleByPlate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.licencePlate) {
       setError("SPZ je povinné pole");
       return;
@@ -91,6 +123,10 @@ export default function NewOrderContent() {
         orderNumber: formData.orderNumber,
         date: formData.date,
         licencePlate: formData.licencePlate.toUpperCase(),
+
+        // NEW: přidáme vehicleId pokud je v URL
+        vehicleId: vehicleIdFromUrl ? (vehicleIdFromUrl as Id<"vehicles">) : undefined,
+
         company: formData.company || undefined,
         contactName: formData.contactName || undefined,
         contactCompany: formData.contactCompany || undefined,
@@ -135,6 +171,11 @@ export default function NewOrderContent() {
             <div>
               <h1 className="text-3xl font-bold text-slate-900">Nová zakázka</h1>
               <p className="text-slate-600 mt-1">Vyplňte údaje pro vytvoření nové zakázky</p>
+              {vehicleIdFromUrl ? (
+                <p className="text-sm text-slate-500 mt-1">
+                  Zakázka bude navázaná na vozidlo (vehicleId)
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -142,7 +183,6 @@ export default function NewOrderContent() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Error message */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
@@ -190,22 +230,26 @@ export default function NewOrderContent() {
                     placeholder="např. 1AB 2345"
                     className="mt-1 font-bold uppercase"
                     required
+                    // Když jdeš přes vehicleId, SPZ je odvozené z vozidla – můžeš nechat editovatelné,
+                    // ale často je lepší ho zamknout, aby se nevytvořil nesoulad.
+                    disabled={Boolean(vehicleIdFromUrl)}
                   />
-                  {/* Vozidlo nalezeno */}
+
+                  {/* indikátory */}
                   {vehicle && (
                     <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
                       <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
                       Vozidlo nalezeno: {vehicle.make} {vehicle.modelLine}
                     </p>
                   )}
-                  {/* Vozidlo nenalezeno */}
-                  {formData.licencePlate.length >= 3 && vehicle === null && (
+                  {!vehicleIdFromUrl && formData.licencePlate.length >= 3 && vehicle === null && (
                     <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
                       <span className="inline-block w-2 h-2 bg-amber-600 rounded-full"></span>
                       Vozidlo není v databázi
                     </p>
                   )}
                 </div>
+
                 <div>
                   <Label htmlFor="kmState">Stav KM</Label>
                   <Input
@@ -265,7 +309,7 @@ export default function NewOrderContent() {
                     id="company"
                     value={formData.company}
                     onChange={(e) => handleChange("company", e.target.value)}
-                    className={`mt-1 ${vehicle?.lessor ? 'bg-green-50' : ''}`}
+                    className={`mt-1 ${vehicle?.lessor ? "bg-green-50" : ""}`}
                   />
                 </div>
                 <div>
@@ -361,7 +405,7 @@ export default function NewOrderContent() {
                     id="brand"
                     value={formData.brand}
                     onChange={(e) => handleChange("brand", e.target.value)}
-                    className={`mt-1 ${vehicle?.make ? 'bg-green-50' : ''}`}
+                    className={`mt-1 ${vehicle?.make ? "bg-green-50" : ""}`}
                   />
                 </div>
                 <div>
@@ -387,7 +431,7 @@ export default function NewOrderContent() {
                   value={formData.vin}
                   onChange={(e) => handleChange("vin", e.target.value.toUpperCase())}
                   placeholder="17 znaků"
-                  className={`mt-1 font-mono ${vehicle?.vinCode ? 'bg-green-50' : ''}`}
+                  className={`mt-1 font-mono ${vehicle?.vinCode ? "bg-green-50" : ""}`}
                   maxLength={17}
                 />
               </div>
@@ -454,11 +498,7 @@ export default function NewOrderContent() {
 
           {/* Submit */}
           <div className="flex gap-4">
-            <Button
-              type="submit"
-              disabled={saving}
-              className="flex-1 h-12 text-lg"
-            >
+            <Button type="submit" disabled={saving} className="flex-1 h-12 text-lg">
               {saving ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
