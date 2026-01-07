@@ -178,3 +178,38 @@ export const getOrderStats = query({
     };
   },
 });
+export const backfillVehicleIdByPlate = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const orders = await ctx.db.query("orders").collect();
+    const vehicles = await ctx.db.query("vehicles").collect();
+
+    // map normalized SPZ -> vehicleId
+    const map = new Map<string, any>();
+    for (const v of vehicles) {
+      const key = (v.licencePlate || "").replace(/\s/g, "").toUpperCase();
+      if (key) map.set(key, v._id);
+    }
+
+    let updated = 0;
+    let skipped = 0;
+
+    for (const o of orders) {
+      if (o.vehicleId) {
+        skipped++;
+        continue;
+      }
+      const key = (o.licencePlate || "").replace(/\s/g, "").toUpperCase();
+      const vehicleId = map.get(key);
+      if (!vehicleId) {
+        skipped++;
+        continue;
+      }
+
+      await ctx.db.patch(o._id, { vehicleId });
+      updated++;
+    }
+
+    return { updated, skipped, total: orders.length };
+  },
+});
