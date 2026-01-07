@@ -1,4 +1,5 @@
 "use client";
+console.log("✅ LOADED: components/order-detail-content.tsx");
 
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
