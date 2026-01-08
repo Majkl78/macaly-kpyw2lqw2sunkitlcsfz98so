@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
-import OrderDetailContent from "@/components/order-detail-content";
-
-export const metadata: Metadata = {
-  title: "Detail zakázky - Správa zakázek",
-  description: "Detail zakázky a její úprava",
-};
-
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  return <OrderDetailContent orderId={params.id} />;
+export default function OrderDetailPage() {
+  return (
+    <div style={{ fontSize: 40, color: "red" }}>
+      🚨 DEBUG PAGE ROUTE
+    </div>
+  );
 }
