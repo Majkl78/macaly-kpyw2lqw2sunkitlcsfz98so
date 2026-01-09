@@ -91,4 +91,69 @@ export default defineSchema({
     .index("by_date", ["date"])
     .index("by_deadline", ["deadline"])
     .index("by_overdue", ["overdue"]),
+    // =========================
+  // V2: Vozidla (nový model)
+  // =========================
+  vehicles_v2: defineTable({
+    orgId: v.id("orgs"),
+
+    plateDisplay: v.string(), // např. "1AB 2345"
+    plateNorm: v.string(), // např. "1AB2345" (normalizované pro vyhledávání)
+
+    vinNorm: v.optional(v.string()),
+
+    make: v.optional(v.string()),
+    modelLine: v.optional(v.string()),
+    notes: v.optional(v.string()),
+
+    searchKey: v.string(), // pro jednoduché vyhledávání
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_org_plateNorm", ["orgId", "plateNorm"])
+    .index("by_org_searchKey", ["orgId", "searchKey"]),
+
+  // =========================
+  // V2: Zakázky (nový model)
+  // =========================
+  orders_v2: defineTable({
+    orgId: v.id("orgs"),
+
+    orderNumberDisplay: v.string(),
+    orderNoNorm: v.string(),
+
+    vehicleId: v.optional(v.id("vehicles_v2")),
+
+    plateSnapshotDisplay: v.optional(v.string()),
+    plateSnapshotNorm: v.optional(v.string()),
+
+    status: v.union(
+      v.literal("open"),
+      v.literal("in_progress"),
+      v.literal("waiting_parts"),
+      v.literal("ready"),
+      v.literal("closed"),
+      v.literal("canceled")
+    ),
+
+    openedAt: v.number(), // epoch ms
+    deadlineAt: v.optional(v.number()), // epoch ms
+    closedAt: v.optional(v.number()), // epoch ms
+
+    confirmed: v.boolean(),
+    pickup: v.boolean(),
+
+    description: v.optional(v.string()),
+    notes: v.optional(v.string()),
+
+    searchKey: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_org_orderNoNorm", ["orgId", "orderNoNorm"])
+    .index("by_org_deadlineAt", ["orgId", "deadlineAt"])
+    .index("by_org_status_updatedAt", ["orgId", "status", "updatedAt"])
+    .index("by_org_vehicleId_updatedAt", ["orgId", "vehicleId", "updatedAt"])
+    .index("by_org_searchKey", ["orgId", "searchKey"]),
+
 });
